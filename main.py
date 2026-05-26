@@ -92,24 +92,31 @@ def jaccard(set_a: set, set_b: set) -> float:
 
 
 def compute_score(user: User, cand: Candidate) -> dict:
-    """
-    ScoreA→B = jaccard(Teach_A, Learn_B)   — user can teach what candidate wants
-    ScoreB→A = jaccard(Teach_B, Learn_A)   — candidate can teach what user wants
-    Total    = ScoreA→B * W1 + ScoreB→A * W2
-    """
     teach_a = _norm(user.skills_teach)
-    learn_a = _norm(user.skills_learn)
-    teach_b = _norm(cand.skills_teach)
-    learn_b = _norm(cand.skills_learn)
+    learn_a  = _norm(user.skills_learn)
+    teach_b  = _norm(cand.skills_teach)
+    learn_b  = _norm(cand.skills_learn)
 
     score_a_to_b = jaccard(teach_a, learn_b)   # A teaches → B learns
     score_b_to_a = jaccard(teach_b, learn_a)   # B teaches → A learns
 
+    # Weighted combination — W1=0.5, W2=0.5
     total = score_a_to_b * W1 + score_b_to_a * W2
+
+    # Reciprocity bonus: reward matches where BOTH directions are non-zero
+    # If either direction is zero, apply a penalty multiplier
+    if score_a_to_b > 0 and score_b_to_a > 0:
+        # Both directions have overlap — true reciprocal match
+        reciprocity_bonus = 1.2  # 20% bonus for mutual exchange
+        total = min(total * reciprocity_bonus, 1.0)
+    elif score_a_to_b == 0 or score_b_to_a == 0:
+        # One direction is zero — penalise one-sided matches
+        total = total * 0.7
+
     percent = int(round(total * 100))
 
-    fwd_set = teach_b & learn_a  # candidate teaches, user learns
-    bwd_set = teach_a & learn_b  # user teaches, candidate learns
+    fwd_set = teach_b & learn_a
+    bwd_set = teach_a & learn_b
 
     return {
         "score_a_to_b": round(score_a_to_b, 4),
