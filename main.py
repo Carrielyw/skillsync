@@ -90,7 +90,7 @@ def jaccard(set_a: set, set_b: set) -> float:
         return 0.0
     return len(set_a & set_b) / len(union)
 
-
+# v2 - reciprocal matching with bonus/penalty
 def compute_score(user: User, cand: Candidate) -> dict:
     teach_a = _norm(user.skills_teach)
     learn_a  = _norm(user.skills_learn)
